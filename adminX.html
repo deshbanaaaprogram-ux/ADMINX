@@ -1,0 +1,256 @@
+<!-- ========== fivexclub-admin.html ========== -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FIVEX CLUB Admin</title>
+  <style>
+    :root {
+      --bg: #0a0c14;
+      --surface: #13161f;
+      --text: #f1f5f9;
+      --accent: #a855f7;
+      --radius: 16px;
+      --font: 'Segoe UI', system-ui, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      padding: 20px;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      background: linear-gradient(135deg, #00d4ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 2.5rem;
+      margin-bottom: 30px;
+    }
+    .section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 12px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    th { color: #a5b4fc; }
+    button {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2d2d4a;
+      color: white;
+      transition: 0.2s;
+    }
+    button:hover { background: #3f3f6a; }
+    .btn-primary { background: #a855f7; }
+    .btn-danger { background: #b91c1c; }
+    .btn-success { background: #10b981; }
+    input, textarea, select {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #1a1a2e;
+      color: white;
+      width: 100%;
+      margin: 4px 0;
+    }
+    .edit-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .footer-credit {
+      text-align: center;
+      margin-top: 40px;
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ FIVEX CLUB Admin</h1>
+
+    <div class="section">
+      <h3>📅 Event Countdown</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="eventName" placeholder="Nama Event" style="width:200px;">
+        <input type="datetime-local" id="eventDate">
+        <button class="btn-primary" onclick="saveEvent()">Simpan Event</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>👥 Anggota Club</h3>
+      <button class="btn-success" onclick="addNewMember()">➕ Tambah Anggota</button>
+      <button class="btn-danger" onclick="resetToDefault()" style="margin-left:10px;">↺ Reset Default</button>
+      <table id="memberTable">
+        <thead><tr><th>Nama</th><th>Status</th><th>Role</th><th>Umur</th><th>Aksi</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="editModal" style="display:none; position:fixed; top:0;left:0;width:100%;height:100%; background:rgba(0,0,0,0.7); align-items:center;justify-content:center;">
+      <div style="background:var(--surface); padding:25px; border-radius:20px; width:90%; max-width:500px;">
+        <h3 id="modalTitle">Edit Anggota</h3>
+        <div class="edit-form">
+          <input type="text" id="editName" placeholder="Nama">
+          <input type="text" id="editStatus" placeholder="Status (Taken -> Partner)">
+          <select id="editStatusType"><option value="taken">Taken</option><option value="justex">Just Ex</option><option value="justfriend">Just Friend</option></select>
+          <input type="text" id="editAge" placeholder="Umur (13+)">
+          <select id="editRole"><option value="Member">Member</option><option value="Admin">Admin</option><option value="Owner">Owner</option></select>
+          <input type="text" id="editMotto" placeholder="Motto">
+          <input type="text" id="editBio" placeholder="Bio tambahan">
+          <input type="text" id="editQuote" placeholder="Quote">
+        </div>
+        <div style="margin-top:15px; display:flex; gap:10px; justify-content:flex-end;">
+          <button onclick="closeEditModal()">Batal</button>
+          <button class="btn-primary" id="saveEditBtn">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-credit">Design by : Deshbanaaa X Informatics</div>
+  </div>
+
+  <script>
+    const STORAGE_MEMBERS = 'fivex_club_members';
+    const STORAGE_SETTINGS = 'fivex_club_settings';
+    const defaultMembers = [
+      { id:1, name:'Kesa', status:'Taken -> Partner', statusType:'taken', age:'13+', role:'Member', motto:'Tetap setia sampai akhir.', bio:'Penyuka kopi dan hujan.', quote:'Hidup itu perjalanan.' },
+      { id:2, name:'Iza', status:'Just Ex -> Unknown', statusType:'justex', age:'14+', role:'Admin', motto:'Fokus pada diri sendiri dulu.', bio:'Pendengar yang baik.', quote:'Move on itu perlu.' },
+      { id:3, name:'Misel', status:'Taken -> Partner', statusType:'taken', age:'13+', role:'Member', motto:'Satu hati, satu tujuan.', bio:'Penggemar musik indie.', quote:'Bersama kita kuat.' },
+      { id:4, name:'Deo', status:'Just Friend -> Partner', statusType:'justfriend', age:'13+', role:'Owner', motto:'Memimpin dengan hati.', bio:'Visioner dan tenang.', quote:'Keluarga di atas segalanya.' },
+      { id:5, name:'Krishna', status:'Taken -> Partner', statusType:'taken', age:'11+', role:'Member', motto:'Kecil tapi berani.', bio:'Energik dan ceria.', quote:'Jangan remehkan aku.' }
+    ];
+
+    let members = JSON.parse(localStorage.getItem(STORAGE_MEMBERS)) || JSON.parse(JSON.stringify(defaultMembers));
+    let currentEditId = null;
+
+    function saveMembers() { localStorage.setItem(STORAGE_MEMBERS, JSON.stringify(members)); }
+    function loadSettings() { return JSON.parse(localStorage.getItem(STORAGE_SETTINGS)) || { eventName:'', eventDate:'' }; }
+    function saveSettings(s) { localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(s)); }
+
+    function renderTable() {
+      const tbody = document.querySelector('#memberTable tbody');
+      tbody.innerHTML = '';
+      members.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${m.name}</td>
+          <td>${m.status}</td>
+          <td>${m.role}</td>
+          <td>${m.age}</td>
+          <td>
+            <button onclick="editMember(${m.id})">✏️ Edit</button>
+            <button class="btn-danger" onclick="deleteMember(${m.id})">🗑️ Hapus</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.deleteMember = function(id) {
+      if (!confirm('Yakin hapus anggota ini?')) return;
+      members = members.filter(m => m.id !== id);
+      saveMembers();
+      renderTable();
+    };
+
+    window.editMember = function(id) {
+      const m = members.find(m => m.id === id);
+      if (!m) return;
+      currentEditId = id;
+      document.getElementById('modalTitle').textContent = 'Edit Anggota';
+      document.getElementById('editName').value = m.name;
+      document.getElementById('editStatus').value = m.status;
+      document.getElementById('editStatusType').value = m.statusType;
+      document.getElementById('editAge').value = m.age;
+      document.getElementById('editRole').value = m.role;
+      document.getElementById('editMotto').value = m.motto;
+      document.getElementById('editBio').value = m.bio || '';
+      document.getElementById('editQuote').value = m.quote || '';
+      document.getElementById('editModal').style.display = 'flex';
+    };
+
+    window.addNewMember = function() {
+      currentEditId = null;
+      document.getElementById('modalTitle').textContent = 'Tambah Anggota Baru';
+      ['editName','editStatus','editAge','editMotto','editBio','editQuote'].forEach(id => document.getElementById(id).value='');
+      document.getElementById('editStatusType').value = 'taken';
+      document.getElementById('editRole').value = 'Member';
+      document.getElementById('editModal').style.display = 'flex';
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById('editModal').style.display = 'none';
+    };
+
+    document.getElementById('saveEditBtn').addEventListener('click', () => {
+      const name = document.getElementById('editName').value.trim();
+      if (!name) return alert('Nama wajib diisi');
+      const data = {
+        name,
+        status: document.getElementById('editStatus').value,
+        statusType: document.getElementById('editStatusType').value,
+        age: document.getElementById('editAge').value,
+        role: document.getElementById('editRole').value,
+        motto: document.getElementById('editMotto').value,
+        bio: document.getElementById('editBio').value,
+        quote: document.getElementById('editQuote').value
+      };
+      if (currentEditId) {
+        const idx = members.findIndex(m => m.id === currentEditId);
+        if (idx !== -1) members[idx] = { ...members[idx], ...data };
+      } else {
+        const newId = Math.max(...members.map(m => m.id), 0) + 1;
+        members.push({ id: newId, ...data });
+      }
+      saveMembers();
+      renderTable();
+      closeEditModal();
+    });
+
+    window.resetToDefault = function() {
+      if (confirm('Kembalikan ke data default?')) {
+        members = JSON.parse(JSON.stringify(defaultMembers));
+        saveMembers();
+        renderTable();
+      }
+    };
+
+    window.saveEvent = function() {
+      const name = document.getElementById('eventName').value;
+      const date = document.getElementById('eventDate').value;
+      saveSettings({ eventName: name, eventDate: date });
+      alert('Event tersimpan!');
+    };
+
+    (function init() {
+      const s = loadSettings();
+      document.getElementById('eventName').value = s.eventName || '';
+      document.getElementById('eventDate').value = s.eventDate || '';
+      renderTable();
+    })();
+  </script>
+</body>
+</html>
